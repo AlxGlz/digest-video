@@ -18,7 +18,7 @@ The preferred local branches:
 | Operation | Tools | Notes |
 | --- | --- | --- |
 | Audio, metadata, frames | FFmpeg / ffprobe | Accept executable paths through `--ffmpeg` / `--ffprobe`; do not infer time from frame number. |
-| Local ASR | faster-whisper | CPU int8 helper; existing model directory, no automatic weight download. |
+| Local ASR | faster-whisper; Sherpa ONNX Zipformer for supported languages | CPU helpers, bounded workers, pilot before full run; see media.md. Existing models, no automatic weight download. |
 | Alternative ASR | whisper.cpp, suitable native tool, optionally remote service | Normalize results using files.md; verify timestamp units and supported fields. |
 | PDF text and rendering | pypdf, pypdfium2, Pillow | Page locators; visual inspection still necessary. |
 | DOCX / PPTX reading | Native document tools, python-docx / python-pptx, MarkItDown | Reading and rendering have different capabilities. See attachments.md. |

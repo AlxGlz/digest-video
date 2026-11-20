@@ -12,8 +12,8 @@ Start with the agent's existing tools. Optional Python helpers and dependencies 
 
 ## Development status
 
-First implementation: the skill instructions and file-based helpers cover evidence extraction, document reading, content validation, Markdown export, PDF building, and resumable operation records. The agent still performs semantic authoring, evidence review, and visual inspection. This is not a standalone automatic video summarizer.
+The skill includes local Whisper and Zipformer adapters with measured pilots, bounded CPU workers and resumable windows; document reading; rendered Markdown link checks; and a reusable Pandoc/Typst reading profile. Authoring guidance preserves the narrative, distinguishes audience discussion, and plans images by explanatory value. The agent still performs semantic authoring, evidence review, and visual inspection. This is not a standalone automatic video summarizer.
 
-Fresh-context Codex and Pi/DeepSeek evaluations are a separate validation stage. Do not infer full portability or accuracy from helper tests alone.
+Fresh-context Codex and Pi/DeepSeek runs informed this revision. Readability, factual completeness and visual quality still need separate review; helper tests do not establish full portability or accuracy.
 
 Developer tests: `python -m unittest discover -s tests -v`. Document-reader tests use the optional document dependencies; all test inputs are synthetic.

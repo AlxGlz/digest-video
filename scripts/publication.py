@@ -2,13 +2,11 @@
 from pathlib import Path
 import re
 import shutil
-from urllib.parse import quote, unquote, urlsplit
+from urllib.parse import parse_qs, quote, unquote, urlsplit
 
 from common import (execute, fingerprint, inside, interval, lines, operation, read,
                     relative, sha, source, version, write)
-
-LINK = re.compile(r'(!?\[[^\]\n]*\])\((<[^>\n]+>|[^\s)]+)(\s+"[^"\n]*")?\)')
-MARKER = re.compile(r'<!--\s*block:([a-zA-Z0-9_-]+)\s*-->')
+from markdown_links import MARKER, block_links, links, parsed_links, replace_links, visible
 
 
 def content_inputs(root):
@@ -22,7 +20,7 @@ def content_inputs(root):
     # Every local link is a dependency, including images. Follow only existing files.
     for path in list(paths):
         if path.suffix == ".md":
-            for match in LINK.finditer(path.read_text(encoding="utf-8")):
+            for match in links(path.read_text(encoding="utf-8")):
                 target = match.group(2).strip("<>")
                 if not urlsplit(target).scheme and not target.startswith("#"):
                     dependency = (path.parent / unquote(target.split("#", 1)[0])).resolve()
@@ -55,7 +53,7 @@ def validate(root):
         errors.append("Content language must match the agreed result language")
     manuscript = inside(root, data["manuscript"])
     manuscript_text = manuscript.read_text(encoding="utf-8")
-    pdf_blocks = MARKER.findall(manuscript_text)
+    pdf_blocks = MARKER.findall(visible(manuscript_text))
     all_blocks = []
     ids = set()
     texts = [(manuscript, manuscript_text)]
@@ -66,7 +64,7 @@ def validate(root):
         path = inside(root, topic["path"])
         text = path.read_text(encoding="utf-8")
         texts.append((path, text))
-        marked = MARKER.findall(text)
+        marked = MARKER.findall(visible(text))
         declared = [b["id"] for b in topic["blocks"]]
         if sorted(marked) != sorted(declared):
             errors.append(f"Block markers differ from manifest in {topic['id']}")
@@ -95,7 +93,12 @@ def validate(root):
     if sorted(pdf_blocks) != sorted(all_blocks):
         errors.append("PDF manuscript must include each declared content block once")
     for path, text in texts:
-        for match in LINK.finditer(text):
+        for ident, targets in block_links(text).items():
+            expected = next((b for t in data["topics"] for b in t["blocks"] if b["id"] == ident), {})
+            for ref in expected.get("sources", []):
+                if not any(target.startswith("source:"+ref["source"]+"#") for target in targets):
+                    errors.append(f"Block {ident} needs a rendered source link for {ref['source']} in {relative(root, path)} (code is not a link)")
+        for match in links(text):
             target = match.group(2).strip("<>")
             if target.startswith("source:"):
                 source_id = target[7:].split("#", 1)[0]
@@ -107,6 +110,14 @@ def validate(root):
                         interval(at, at, 0, sources[source_id]["duration"])
                     except (ValueError, KeyError) as exc:
                         errors.append(f"Invalid time link {target}: {exc}")
+                elif "#" in target:
+                    for key, values in parse_qs(target.split("#", 1)[1]).items():
+                        if key in ("page", "slide", "paragraph", "line", "table"):
+                            try:
+                                if int(values[0]) < 1:
+                                    raise ValueError("locator must be positive")
+                            except ValueError as exc:
+                                errors.append(f"Invalid source link {target}: {exc}")
             elif urlsplit(target).scheme:
                 if match.group(1).startswith("!"):
                     errors.append(f"Freeze remote images locally before publication: {target}")
@@ -118,7 +129,7 @@ def validate(root):
                     errors.append(f"Use source: links for external originals: {target}")
                 if not local.is_file():
                     errors.append(f"Missing linked file in {relative(root, path)}: {target}")
-        if re.search(r"^\s*\[[^\]]+\]:", text, flags=re.M):
+        if re.search(r"^\s*\[[^\]]+\]:", visible(text), flags=re.M):
             errors.append(f"Use inline Markdown links for export: {relative(root, path)}")
     try:
         coverage = read(root / "review" / "coverage.json")
@@ -167,12 +178,21 @@ def build(root, pandoc="pandoc", typst="typst", font="Arial", size=11):
     sources = {s["id"]: s for s in read(root / "sources.json")}
     folder = root / "output"
     params = {"pandoc": pandoc, "typst": typst, "font": font, "size": size,
-              "versions": {"pandoc": version(pandoc), "typst": version(typst)}}
+              "versions": {"pandoc": version(pandoc), "typst": version(typst)},
+              "profile_sha256": {name: sha(Path(__file__).resolve().parents[1] / ("assets/"+name))
+                                  for name in ("reading.typ", "reading.yaml", "reading.lua")}}
     def action():
         previous = read(folder / "build.json").get("files", {}) if (folder / "build.json").exists() else {}
         folder.mkdir(parents=True, exist_ok=True)
         topics_dir = folder / "topics"
         topics_dir.mkdir(exist_ok=True)
+        expected_blocks = {b["id"]: b for topic in data["topics"] for b in topic["blocks"]}
+        for i, path in enumerate([inside(root, data["manuscript"])] + [inside(root, t["path"]) for t in data["topics"]]):
+            _, parsed = parsed_links(path, pandoc, root / f"checks/links-input-{i}.log")
+            for ident in MARKER.findall(visible(path.read_text(encoding="utf-8"))):
+                for ref in expected_blocks[ident]["sources"]:
+                    if not any(t.startswith("source:"+ref["source"]+"#") for t in parsed.get(ident, [])):
+                        raise ValueError(f"Pandoc found no real source link for {ident}/{ref['source']} in {path.name}")
         assets = folder / "assets"
         assets.mkdir(exist_ok=True)
         files = []
@@ -200,7 +220,7 @@ def build(root, pandoc="pandoc", typst="typst", font="Arial", size=11):
                     if fragment:
                         target += "#" + fragment
                 return match.group(1) + "(<" + target + ">" + suffix + ")"
-            text = LINK.sub(link, text)
+            text = replace_links(text, link)
             text = MARKER.sub("", text)
             if data.get("limitations"):
                 limitation = data["limitations"].strip() + "\n\n"
@@ -220,8 +240,24 @@ def build(root, pandoc="pandoc", typst="typst", font="Arial", size=11):
             "\n\n" + data.get("limitations", "") + "\n", encoding="utf-8")
         files.append(index)
         export(inside(root, data["manuscript"]), folder / "reading.md", pdf=True)
+        link_report = []
+        for i, path in enumerate([folder / "reading.md", index] + [topics_dir / (t["id"]+".md") for t in data["topics"]]):
+            targets, _ = parsed_links(path, pandoc, root / f"checks/links-output-{i}.log")
+            expected = [m.group(2).strip("<>") for m in links(path.read_text(encoding="utf-8")) if not m.group(1).startswith("!")]
+            if sorted(targets) != sorted(expected) or any(t.startswith("source:") for t in targets):
+                raise ValueError(f"Exported links differ from rendered Markdown in {path.name}")
+            link_report.append({"path": relative(root, path), "rendered_links": len(targets)})
+        write(folder / "links.json", {"passed": True, "parser": params["versions"]["pandoc"], "files": link_report})
+        files.append(folder / "links.json")
+        style = folder / "reading-style.typ"
+        shutil.copy2(Path(__file__).resolve().parents[1] / "assets/reading.typ", style)
+        files.append(style)
+        for name in ("reading.yaml", "reading.lua"):
+            shutil.copy2(Path(__file__).resolve().parents[1] / ("assets/"+name), folder / name)
+            files.append(folder / name)
         execute([pandoc, "reading.md", "--standalone", "--toc", "-t", "typst", "-V", f"fontsize={size}pt",
-                 "-V", f"mainfont={font}", "-o", "digest.typ"], root / "checks" / "pandoc.log", folder)
+                 "-V", f"mainfont={font}", "--metadata-file=reading.yaml", "--lua-filter=reading.lua",
+                 "--include-before-body=reading-style.typ", "-o", "digest.typ"], root / "checks" / "pandoc.log", folder)
         # Typst's default root is the input directory, so assets stay under output/.
         execute([typst, "compile", "digest.typ", "digest.pdf"], root / "checks" / "typst.log", folder)
         pdf = folder / "digest.pdf"
@@ -264,6 +300,8 @@ def release(root):
         errors.append("The last publication operation did not complete")
     try:
         built = read(root / "output" / "build.json")
+        if "output/links.json" not in built["files"] or read(root / "output/links.json").get("passed") is not True:
+            errors.append("Missing rendered Markdown link verification; rebuild with the current helper")
         if built["content_revision"] != report.get("content_revision"):
             errors.append("Publication is stale")
         for path, digest in built["files"].items():

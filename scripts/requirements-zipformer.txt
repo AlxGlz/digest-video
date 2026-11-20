@@ -1,0 +1,2 @@
+# Optional Russian CPU path, in addition to requirements-asr.txt.
+sherpa-onnx==2.0.2

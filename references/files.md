@@ -2,6 +2,8 @@
 
 Keep the run outside the skill checkout. UTF-8 text and relative paths within the run allow another agent to resume. The examples use seconds in the original recording and English field names; authored text remains in the user's language.
 
+After authoring marked `content/topics/*.md` with real inline `source:` citations, `digest.py --work /run prepare-manifest --title "Digest title"` can generate initial manifest metadata. It never overwrites an existing manifest and does not write the narrative or claim a review. Review topic order, replace title-only summaries with useful retrieval summaries, expand cited time points into supported intervals when appropriate, and add evidence paths and limitations. Then author the PDF manuscript and coverage map. This removes mechanical ID/link transcription while leaving editorial decisions explicit.
+
 `run.json` stores the recording source ID, agreed time scope, output language, actual structure confirmation, and cached operations. `sources.json` stores source IDs, paths, hashes, roles, media metadata, and prior revisions. Register every attachment. Relocate an unchanged source by ID; a changed hash invalidates dependent work. Keep the old original separately if it must remain available.
 
 After receiving the user's structure response, save an agreement JSON and import it with `digest.py --work /run agreement /run/agreement.json`:

@@ -3,6 +3,7 @@
 from pathlib import Path
 import argparse
 import importlib.metadata
+import os
 import shutil
 import sys
 
@@ -90,12 +91,17 @@ def status(root):
 
 def doctor():
     packages = {}
-    for package in ("faster-whisper", "ctranslate2", "av", "pypdf", "pypdfium2", "python-docx", "python-pptx", "markitdown"):
+    for package in ("faster-whisper", "ctranslate2", "av", "pypdf", "pypdfium2", "python-docx", "python-pptx", "markitdown", "sherpa-onnx"):
         try:
             packages[package] = importlib.metadata.version(package)
         except importlib.metadata.PackageNotFoundError:
             packages[package] = None
-    return {"python": sys.version, "commands": {x: shutil.which(x) for x in ("ffmpeg", "ffprobe", "pandoc", "typst", "soffice", "tesseract")},
+    cache = Path(os.environ.get("DIGEST_VIDEO_CACHE", Path.home() / ".cache/digest-video")).resolve()
+    cached_python = cache / "venv" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+    return {"python": sys.version, "cache": {"path": str(cache),
+                "python": str(cached_python) if cached_python.is_file() else None,
+                "models": [str(p) for p in sorted((cache / "models").glob("*")) if p.is_dir()]},
+            "commands": {x: shutil.which(x) for x in ("ffmpeg", "ffprobe", "pandoc", "typst", "soffice", "tesseract")},
             "packages": packages, "note": "The agent must separately establish available audio and image understanding capabilities."}
 
 
@@ -126,11 +132,14 @@ def parser():
     x.add_argument("--width", type=int, default=1600)
     x.add_argument("--ffmpeg", default="ffmpeg")
     x = sub.add_parser("transcribe")
-    x.add_argument("--model", required=True, help="Existing faster-whisper model directory")
+    x.add_argument("--model", required=True, help="Existing local model directory; see references/media.md")
     x.add_argument("--language", required=True, help="Spoken language; may differ from result language")
     x.add_argument("--chunk", type=float, default=300)
     x.add_argument("--overlap", type=float, default=4)
-    x.add_argument("--threads", type=int, default=4)
+    x.add_argument("--cpu-budget", "--threads", dest="threads", type=int, default=2, help="Total inference thread budget across workers (default 2)")
+    x.add_argument("--jobs", type=int, default=1)
+    x.add_argument("--engine", choices=("whisper", "zipformer"), default="whisper")
+    x.add_argument("--batch-size", type=int, default=0, help="Whisper batch size; nonzero requires --vad")
     x.add_argument("--vad", action="store_true")
     x.add_argument("--start", type=float)
     x.add_argument("--end", type=float)
@@ -144,6 +153,9 @@ def parser():
     x.add_argument("--pages", help="Comma-separated one-based page numbers; default all")
     x.add_argument("--width", type=int, default=1600)
     sub.add_parser("check")
+    x = sub.add_parser("prepare-manifest", help="Create initial metadata from marked topics; never overwrite")
+    x.add_argument("--title", required=True)
+    x.add_argument("--manuscript", default="publication/reading.md")
     x = sub.add_parser("build")
     x.add_argument("--pandoc", default="pandoc")
     x.add_argument("--typst", default="typst")
@@ -185,7 +197,7 @@ def main():
         elif args.command == "transcribe":
             from media import transcribe
             result = transcribe(root, args.model, args.language, args.chunk, args.overlap, args.threads,
-                                args.vad, args.start, args.end, args.ffmpeg)
+                                args.vad, args.start, args.end, args.ffmpeg, args.engine, args.jobs, args.batch_size)
         elif args.command == "document":
             from documents import extract
             result = extract(root, args.source, args.reader)
@@ -194,6 +206,9 @@ def main():
             from documents import render
             pdf = args.pdf or (source(root, args.source)["path"] if args.source else root / "output/digest.pdf")
             result = render(root, pdf, [int(x) for x in args.pages.split(",")] if args.pages else None, args.width, args.source)
+        elif args.command == "prepare-manifest":
+            from manifest import prepare
+            result = prepare(root, args.title, args.manuscript)
         else:
             from publication import build, release, review, validate
             if args.command == "check":

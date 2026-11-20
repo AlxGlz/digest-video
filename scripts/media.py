@@ -30,8 +30,8 @@ def audio(root, start=None, end=None, ffmpeg="ffmpeg"):
     params = {"start": start, "end": end, "rate": 16000, "channels": 1, "ffmpeg": ffmpeg, "version": tool_version}
     def action():
         out.parent.mkdir(parents=True, exist_ok=True)
-        execute([ffmpeg, "-hide_banner", "-nostdin", "-y", "-ss", start, "-i", src["path"],
-                 "-t", end-start, "-vn", "-ac", 1, "-ar", 16000, "-c:a", "pcm_s16le", out],
+        execute([ffmpeg, "-hide_banner", "-nostdin", "-y", "-threads", 1, "-ss", start, "-i", src["path"],
+                 "-t", end-start, "-vn", "-ac", 1, "-ar", 16000, "-c:a", "pcm_s16le", "-threads", 1, out],
                 out.with_suffix(".log"))
         write(out.with_suffix(".json"), {"source": src["id"], "source_sha256": src["sha256"], "offset": start, "end": end,
                                        "mapping": "original = audio_seconds + offset"})
@@ -102,55 +102,6 @@ def normalize(parts, source_id, start, end):
     return result
 
 
-def transcribe(root, model, language, chunk=300, overlap=4, threads=4, vad=False,
-               start=None, end=None, ffmpeg="ffmpeg"):
-    root = Path(root)
-    run, start, end = limits(root, start, end)
-    if chunk <= 0 or not 0 <= overlap < chunk:
-        raise ValueError("Require chunk > overlap >= 0")
-    model = Path(model).resolve()
-    if not model.is_dir():
-        raise ValueError("Supply an existing faster-whisper model directory; download models separately")
-    src = source(root, run["video"])
-    weights = {p.name: sha(p) for p in sorted(model.iterdir()) if p.is_file()}
-    versions = {p: importlib.metadata.version(p) for p in ("faster-whisper", "ctranslate2", "av")}
-    params = dict(model=str(model), weights=weights, language=language, chunk=chunk, overlap=overlap,
-                  threads=threads, vad=vad, start=start, end=end, versions=versions,
-                  ffmpeg=ffmpeg, ffmpeg_version=version(ffmpeg, "-version"))
-    tag = fingerprint([src["sha256"], params])[:12]
-    def action():
-        folder = root / "evidence" / "asr" / (tag + "-" + str(time.time_ns()))
-        from faster_whisper import WhisperModel
-        engine = WhisperModel(str(model), device="cpu", compute_type="int8", cpu_threads=threads,
-                              num_workers=1, local_files_only=True)
-        parts, files = [], []
-        cursor = start
-        number = 0
-        while cursor < end:
-            owner_end = min(cursor+chunk, end)
-            a, b = max(start, cursor-overlap/2), min(end, owner_end+overlap/2)
-            wav, _ = audio(root, a, b, ffmpeg)
-            raw_file = folder / f"part-{number:04}.json"
-            segments, info = engine.transcribe(str(wav), language=language, beam_size=5,
-                                               temperature=0, condition_on_previous_text=False,
-                                               word_timestamps=True, vad_filter=vad)
-            raw = []
-            for seg in segments:
-                item = asdict(seg)
-                raw.append(item)
-            data = {"offset": a, "keep": [cursor, owner_end], "audio": relative(root, wav),
-                    "duration": info.duration, "duration_after_vad": info.duration_after_vad,
-                    "language": info.language, "segments": raw, "parameters": params,
-                    "source_sha256": src["sha256"]}
-            write(raw_file, data)
-            parts.append(dict(data, raw=relative(root, raw_file)))
-            files.append(raw_file)
-            cursor, number = owner_end, number+1
-        normalized = normalize(parts, src["id"], start, end)
-        out = folder / "segments.jsonl"
-        dump_lines(out, normalized)
-        write(folder / "index.json", {"source": src["id"], "range": [start, end], "segments": len(normalized),
-                                     "parts": [relative(root, p) for p in files], "parameters": params,
-                                     "note": "Review chunk boundaries and significant facts; timestamps are estimates."})
-        return files + [out, folder / "index.json"]
-    return operation(root, f"asr:{tag}", {src["id"]: src["sha256"]}, params, action)
+
+# Keep the original import surface for callers.
+from speech import transcribe

@@ -29,7 +29,8 @@ class RunCase(unittest.TestCase):
             "# Method\n<!-- block:method -->\nAn explanation. [Source](source:video#t=0)\n"
             "<!-- block:limit -->\nA limitation from later. [Source](source:video#t=45)\n", encoding="utf-8")
         (self.root / "publication/reading.md").write_text(
-            "# Method\n<!-- block:method -->\nAn explanation.\n<!-- block:limit -->\nThe later qualification.\n", encoding="utf-8")
+            "# Method\n<!-- block:method -->\nAn explanation. [Source](source:video#t=0)\n"
+            "<!-- block:limit -->\nThe later qualification. [Source](source:video#t=45)\n", encoding="utf-8")
         write(self.root / "content/manifest.json", {"schema_version": 1, "language": "en", "title": "Method",
               "manuscript": "publication/reading.md", "evidence": [], "limitations": "", "topics": [{"id": "method",
               "title": "Method", "summary": "Explanation and limitation", "path": "content/topics/method.md",
@@ -127,8 +128,10 @@ class RunCase(unittest.TestCase):
         pdf = self.root / "output/digest.pdf"
         pdf.parent.mkdir()
         pdf.write_bytes(b"%PDF-synthetic-v1")
+        link_report = self.root / "output/links.json"
+        write(link_report, {"passed": True, "files": []})
         content_revision = validate(self.root)["content_revision"]
-        write(self.root / "output/build.json", {"content_revision": content_revision, "files": {"output/digest.pdf": sha(pdf)}})
+        write(self.root / "output/build.json", {"content_revision": content_revision, "files": {"output/digest.pdf": sha(pdf), "output/links.json": sha(link_report)}})
         run = read(self.root / "run.json")
         run["operations"]["publication"] = {"state": "completed"}
         write(self.root / "run.json", run)
@@ -136,7 +139,7 @@ class RunCase(unittest.TestCase):
         review(self.root, "visual", "Synthetic check")
         self.assertEqual(release(self.root)["state"], "ready")
         pdf.write_bytes(b"%PDF-synthetic-v2")
-        write(self.root / "output/build.json", {"content_revision": content_revision, "files": {"output/digest.pdf": sha(pdf)}})
+        write(self.root / "output/build.json", {"content_revision": content_revision, "files": {"output/digest.pdf": sha(pdf), "output/links.json": sha(link_report)}})
         self.assertEqual(release(self.root)["state"], "draft")
 
     def test_failed_rebuild_does_not_release_previous_pdf(self):
