@@ -1,6 +1,6 @@
-# Developing digest-video
+# Repository instructions
 
-This repository contains the portable skill and its reusable helpers. Keep developer plans, research, and private test runs in the separate development workspace provided with the task. The installed skill must work without that workspace or the development conversation.
+This repository contains the portable skill, reusable helpers, and synthetic tests. Keep task-specific plans, private inputs, and run artifacts outside the skill directory.
 
 Write the skill, its description, shipped instructions, reference material, and command documentation in English. The user's conversation and generated PDF/Markdown use the user's requested language. Preserve original quotations, code identifiers, and multilingual test data when needed for fidelity.
 

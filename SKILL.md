@@ -56,6 +56,6 @@ Deliver the PDF and Markdown index with significant limitations. Review-recordin
 
 ## Resume and revisions
 
-Keep run state and evidence on disk so a single agent can resume without chat history. Reuse unchanged successful stages. A source correction updates affected episodes, topics, both outputs, and their checks. A PDF-only formatting request rebuilds the saved manuscript and images without repeating ASR or LLM authoring, followed by visual inspection.
+Keep run state and evidence on disk so the workflow can resume from those files. Reuse unchanged successful stages. A source correction updates affected episodes, topics, both outputs, and their checks. A PDF-only formatting request rebuilds the saved manuscript and images without repeating ASR or LLM authoring, followed by visual inspection.
 
-One agent must be able to execute the entire process. Where subagents are available and authorized, select the least demanding model that can meet the subtask's quality requirements; preserve the same file contracts and review the result. No specific host, agent framework, remote service, or developer checkout is required.
+One agent must be able to execute the entire process. Where subagents are available and authorized, select the least demanding model that can meet the subtask's quality requirements; preserve the same file contracts and review the result.

@@ -38,4 +38,4 @@ Perform a separate reader pass through the PDF manuscript. Name the subsection t
 
 Try narrow questions that exercise the intended use: explaining a method, reconstructing a worked example, naming a condition under which it fails, or tracing a meeting's final decision to its reasons. Include an answer based on two separated episodes. Start from the index; record which topics were needed and whether their source locations verify the answer. Report actual token usage only if measured by the host; file size is not a token measurement.
 
-Use optional delegation only if the environment and user permit it. A solo agent follows the same review. Developer self-checks do not count as independent fresh-session evaluations.
+Use optional delegation only if the environment and user permit it. A solo agent follows the same review. Describe reviews performed by the author as self-checks.
