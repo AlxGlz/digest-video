@@ -1,19 +1,11 @@
-# Разработка digest-video
+# Developing digest-video
 
-Этот репозиторий содержит реализацию переносимого скилла `digest-video`. Назначение и текущая готовность описаны в [README.md](README.md).
+This repository contains the portable skill and its reusable helpers. Keep developer plans, research, and private test runs in the separate development workspace provided with the task. The installed skill must work without that workspace or the development conversation.
 
-## Работа по заданию
+Write the skill, its description, shipped instructions, reference material, and command documentation in English. The user's conversation and generated PDF/Markdown use the user's requested language. Preserve original quotations, code identifiers, and multilingual test data when needed for fidelity.
 
-Планы, исследования и задачи ведутся в отдельном проекте-оркестраторе. Используй требования и критерии приёмки, переданные вместе с задачей. Если для выполнения не хватает согласованного решения, задай вопрос пользователю.
+Use relative skill/run paths and existing environment capabilities. One agent must be able to complete the workflow. Preserve raw evidence, source locators, and reusable authored content for both output formats.
 
-Если задаёшь пользователю вопрос, заверши сообщение и дождись ответа. До ответа не продолжай работу, включая чтение и изменение файлов. Продолжать параллельно можно только по явной просьбе пользователя.
+If you ask the user a question, end the turn and wait for the answer before continuing any work, including reading files. Parallel work while waiting requires the user's explicit request.
 
-## Переносимость
-
-Скилл должен быть выполним одним агентом, который читает локальные файлы и запускает команды. Его инструкции должны содержать всё необходимое для применения без истории разработки и доступа к оркестратору.
-
-Используй пути относительно папки скилла и входных данных пользователя. Сохраняй возможность повторно использовать расшифровку, кадры и ссылки на источники при подготовке PDF и Markdown и при доработках.
-
-## Файлы для публикации
-
-В репозитории хранятся инструкции, код и материалы, предназначенные для распространения. Локальные записи, приложения, результаты прогонов и секреты храни вне отслеживаемых файлов. Добавляя пример для публикации, проверь его содержимое и возможность распространения.
+Keep recordings, attachments, model weights, binaries, generated outputs, and credentials outside tracked repository files. Publish only distributable code, instructions, and synthetic fixtures. Test changed helpers through their observable behavior; a structural validator does not establish content accuracy or visual quality.

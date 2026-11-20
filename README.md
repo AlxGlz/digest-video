@@ -1,22 +1,19 @@
 # digest-video
 
-Переносимый скилл для подробного пересказа локальной видеозаписи лекции, семинара, рабочей встречи или записи смешанного формата.
+A portable agent skill that turns a local lecture, seminar, meeting, or mixed-format recording into a detailed illustrated PDF and source-linked topical Markdown. Supporting materials can include slides, Word documents, PDFs, code, or other files read through available environment tools.
 
-Скилл должен готовить два результата на языке пользователя:
+The skill's instructions are in English. Conversation and deliverables follow the user's language. A single agent can run the workflow; no BB, Codex-specific API, or development-chat context is required.
 
-- **PDF-конспект** — связный текст с кадрами записи или читаемыми изображениями слайдов там, где они нужны для понимания.
-- **Тематические Markdown-файлы** — материалы для агентов с оглавлением и ссылками на таймкоды записи и фрагменты приложений.
+## Use
 
-Презентации, документы, скрипты и другие приложения помогают восстановить контекст. Перед подготовкой пересказа агент определяет тип записи и согласует с пользователем структуру результата. Расшифровка с таймкодами, кадры и привязки к приложениям используются повторно для обоих форматов.
+Place this repository's `digest-video` folder in a skill directory recognized by your agent, or explicitly ask it to read [SKILL.md](SKILL.md). Provide the local recording path and any attachments. The agent inspects representative material, proposes the recording type and structure, and waits for your confirmation before authoring the digest. Human transcript proofreading is optional.
 
-## Состояние проекта
+Start with the agent's existing tools. Optional Python helpers and dependencies are described in [references/tools.md](references/tools.md). Run `python scripts/digest.py --help` to inspect commands. Keep working data outside this repository. Helper dependencies, model weights, FFmpeg, Pandoc, and Typst are installed separately when needed.
 
-Репозиторий создан для разработки скилла. Требования, план и обзор инструментов подготовлены. Выполнены синтетические технические проверки; сравнение на реальной записи, реализация и независимые прогоны ещё впереди. Рабочего скилла и инструкций по установке пока нет.
+## Development status
 
-## Разработка
+First implementation: the skill instructions and file-based helpers cover evidence extraction, document reading, content validation, Markdown export, PDF building, and resumable operation records. The agent still performs semantic authoring, evidence review, and visual inspection. This is not a standalone automatic video summarizer.
 
-Имя скилла — `digest-video`, имя репозитория — `digest-video`.
+Fresh-context Codex and Pi/DeepSeek evaluations are a separate validation stage. Do not infer full portability or accuracy from helper tests alone.
 
-Планы, задания, исследования и контекст обсуждений ведутся в отдельном проекте-оркестраторе. Здесь размещаются инструкции скилла, вспомогательные скрипты и материалы, необходимые для его применения. Готовый скилл должен работать без доступа к оркестратору и истории разработки.
-
-Локальные входные материалы и результаты прогонов можно хранить в игнорируемых каталогах `inputs/`, `outputs/`, `runs/` или `.work/`.
+Developer tests: `python -m unittest discover -s tests -v`. Document-reader tests use the optional document dependencies; all test inputs are synthetic.
