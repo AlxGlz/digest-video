@@ -1,0 +1,28 @@
+# Local inputs, generated artifacts, and development scratch data
+/inputs/
+/outputs/
+/runs/
+/.work/
+/.scratch/
+/.cache/
+
+# Credentials and local configuration
+.env
+.env.*
+!.env.example
+
+# Python environments and caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local editor and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+Desktop.ini
