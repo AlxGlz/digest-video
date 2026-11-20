@@ -129,7 +129,7 @@ class RunCase(unittest.TestCase):
         pdf.parent.mkdir()
         pdf.write_bytes(b"%PDF-synthetic-v1")
         link_report = self.root / "output/links.json"
-        write(link_report, {"passed": True, "files": []})
+        write(link_report, {"passed": True, "files": [], "pdf": {"passed": True, "sha256": sha(pdf)}})
         content_revision = validate(self.root)["content_revision"]
         write(self.root / "output/build.json", {"content_revision": content_revision, "files": {"output/digest.pdf": sha(pdf), "output/links.json": sha(link_report)}})
         run = read(self.root / "run.json")

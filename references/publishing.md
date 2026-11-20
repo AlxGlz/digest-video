@@ -16,7 +16,13 @@ The bundled `assets/reading.typ`, `reading.yaml`, and `reading.lua` profile keep
 
 `check` validates source availability/hashes, actual confirmation being recorded, output language, block coverage in both sources, source references, local files, time intervals, and coverage holes. It does not evaluate prose, source truth, word alignment, or legibility. Fix technical failures before proceeding, while retaining evidence of unresolved content.
 
-Every content block needs actual inline source links in both the topic and manuscript. Do not wrap a citation in backticks. Code examples remain literal and are excluded from citation checks and export rewriting. The build also parses input and exported Markdown with Pandoc, checking that links are real Link nodes; `output/links.json` records this check. Open representative exported source and index links to verify the viewer behavior. A file link with a time fragment is a locator even when the user's player does not seek automatically.
+Every content block needs actual inline source links in the authoritative topic and manuscript. Give each citation a human-readable label containing its source name and timestamp or page, for example `[Recording, 00:12:30](source:video#t=750)`. Do not wrap citations in backticks. Code examples remain literal and are excluded from citation checks and export rewriting.
+
+The PDF is a standalone, shareable document. Its source citations are plain visible text: recording name/time, attachment name/page, or another meaningful locator. No PDF link may open a local file, folder, relative external document, or local server. Keep internal table-of-contents navigation and supplied public web links. Never upload recordings or attachments to create shareable links without the user's instruction.
+
+The helper keeps local source links in exported Markdown, while replacing those links with their labels in the PDF manuscript. Local images are embedded, not linked as external files. The build parses Markdown with Pandoc and then checks actual PDF annotation actions with pypdf; `output/links.json` records both checks. Release requires this report to match the current PDF. When using a different renderer, inspect the resulting PDF destinations too. Keep source labels meaningful after removing the clickable target, and remove visible machine-specific paths from human-facing citations.
+
+Open representative Markdown source and index links to verify viewer behavior. A file link with a time fragment is a Markdown locator even when the user's player does not seek automatically; it is not a portable PDF destination.
 
 Review the content using authoring.md. Then inspect every rendered PDF page: check glyphs, readable captions/images/code/tables, clipping, page breaks, links, and whether each figure sits usefully near its explanation. Open individual pages at a readable size. A contact sheet is useful for navigation, but does not replace checking small details.
 

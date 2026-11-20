@@ -52,6 +52,8 @@ Read the PDF manuscript as someone who missed the recording. Check transitions b
 
 Render and inspect all PDF pages for readable text, images, code, tables, captions, cropping, and page breaks. OCR/text extraction cannot establish visual quality. If the environment lacks a usable visual path, save the artifacts and state that verification is incomplete rather than declaring the PDF checked.
 
+The PDF must be shareable on its own: use visible source names, timestamps, and page numbers as plain text. Never create links to local files, folders, or local servers in the PDF. Keep working local source links in the Markdown bundle. Internal PDF navigation and supplied public web links may remain; do not upload private sources to manufacture a URL. See publishing.md for the build check.
+
 Deliver the PDF and Markdown index with significant limitations. Review-recording commands store your performed checks; they do not perform them for you.
 
 ## Resume and revisions

@@ -40,7 +40,7 @@ Kinds are `content`, `repeat`, `silence`, and `gap`. Content and repeats link to
 
 ## Publishable content
 
-Write topics in `content/topics/` and the narrative in `publication/reading.md`. Source references in readable text use inline links such as `[recording, 00:00:12](source:video#t=12)` or `[slide 4](source:slides#page=4)` for a PDF. Do not use a PDF page fragment for a PPTX viewer unless it supports it: the visible slide/paragraph locator still makes the reference usable.
+Write topics in `content/topics/` and the narrative in `publication/reading.md`. Authoring source references use inline links such as `[recording, 00:00:12](source:video#t=12)` or `[slides.pdf, page 4](source:slides#page=4)` for a PDF attachment. Export keeps these as working local links in Markdown and plain visible labels in the final PDF; see publishing.md. Do not use a PDF page fragment for a PPTX viewer unless it supports it: the visible slide/paragraph locator still makes the reference usable.
 
 Local image paths are relative to the Markdown file, for example `../../evidence/pages/HASH/page-0004.png`. Use inline Markdown links, enclosing targets with spaces in angle brackets; the exporter does not support reference-style link definitions. Keep original technical identifiers intact. Include descriptive captions with source locations.
 

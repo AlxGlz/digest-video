@@ -16,4 +16,6 @@ The skill includes local Whisper and Zipformer adapters with measured pilots, bo
 
 Readability, factual completeness and visual quality need separate review; helper tests do not establish accuracy on arbitrary recordings.
 
+The PDF is shareable without the original computer: source names, timestamps and page numbers remain visible text, with no links to local files or servers. The Markdown bundle retains working local source links. PDF link destinations are checked during build and release.
+
 Tests: `python -m unittest discover -s tests -v`. Document-reader tests use the optional document dependencies; all test inputs are synthetic.

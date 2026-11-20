@@ -7,6 +7,7 @@ from urllib.parse import parse_qs, quote, unquote, urlsplit
 from common import (execute, fingerprint, inside, interval, lines, operation, read,
                     relative, sha, source, version, write)
 from markdown_links import MARKER, block_links, links, parsed_links, replace_links, visible
+from pdf_links import inspect_pdf, portable_target
 
 
 def content_inputs(root):
@@ -177,7 +178,7 @@ def build(root, pandoc="pandoc", typst="typst", font="Arial", size=11):
         raise ValueError("Font size must be between 6 and 40 points")
     sources = {s["id"]: s for s in read(root / "sources.json")}
     folder = root / "output"
-    params = {"pandoc": pandoc, "typst": typst, "font": font, "size": size,
+    params = {"pandoc": pandoc, "typst": typst, "font": font, "size": size, "pdf_link_policy": 1,
               "versions": {"pandoc": version(pandoc), "typst": version(typst)},
               "profile_sha256": {name: sha(Path(__file__).resolve().parents[1] / ("assets/"+name))
                                   for name in ("reading.typ", "reading.yaml", "reading.lua")}}
@@ -202,6 +203,10 @@ def build(root, pandoc="pandoc", typst="typst", font="Arial", size=11):
             def link(match):
                 target = match.group(2).strip("<>")
                 suffix = match.group(3) or ""
+                if pdf and not match.group(1).startswith("!") and not portable_target(target):
+                    # The manuscript's label carries the human-readable source locator.
+                    # Keep source links in Markdown, but never make the PDF depend on this PC.
+                    return match.group(1)[1:-1]
                 if target.startswith("source:"):
                     source_id, _, fragment = target[7:].partition("#")
                     target = Path(sources[source_id]["path"]).as_uri() + ("#"+fragment if fragment else "")
@@ -247,8 +252,6 @@ def build(root, pandoc="pandoc", typst="typst", font="Arial", size=11):
             if sorted(targets) != sorted(expected) or any(t.startswith("source:") for t in targets):
                 raise ValueError(f"Exported links differ from rendered Markdown in {path.name}")
             link_report.append({"path": relative(root, path), "rendered_links": len(targets)})
-        write(folder / "links.json", {"passed": True, "parser": params["versions"]["pandoc"], "files": link_report})
-        files.append(folder / "links.json")
         style = folder / "reading-style.typ"
         shutil.copy2(Path(__file__).resolve().parents[1] / "assets/reading.typ", style)
         files.append(style)
@@ -263,6 +266,12 @@ def build(root, pandoc="pandoc", typst="typst", font="Arial", size=11):
         pdf = folder / "digest.pdf"
         if not pdf.read_bytes().startswith(b"%PDF-"):
             raise ValueError("The renderer did not produce a PDF")
+        pdf_links = inspect_pdf(pdf)
+        write(folder / "links.json", {"passed": pdf_links["passed"], "parser": params["versions"]["pandoc"],
+                                      "files": link_report, "pdf": pdf_links})
+        files.append(folder / "links.json")
+        if not pdf_links["passed"]:
+            raise ValueError("PDF contains nonportable link actions; see output/links.json")
         files.extend([folder / "digest.typ", pdf])
         current_paths = {relative(root, p) for p in files}
         for name in set(previous) - current_paths:
@@ -302,6 +311,9 @@ def release(root):
         built = read(root / "output" / "build.json")
         if "output/links.json" not in built["files"] or read(root / "output/links.json").get("passed") is not True:
             errors.append("Missing rendered Markdown link verification; rebuild with the current helper")
+        pdf_links = read(root / "output/links.json").get("pdf", {})
+        if pdf_links.get("passed") is not True or pdf_links.get("sha256") != sha(root / "output/digest.pdf"):
+            errors.append("Missing or stale portable PDF link verification; rebuild with the current helper")
         if built["content_revision"] != report.get("content_revision"):
             errors.append("Publication is stale")
         for path, digest in built["files"].items():
